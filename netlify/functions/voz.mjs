@@ -10,9 +10,10 @@ export default async (req) => {
   const text = String(url.searchParams.get('t') || '').replace(/\s+/g, ' ').trim().slice(0, 320);
   if (!text) return new Response('Texto vacío', { status: 400 });
   const model = url.searchParams.get('m') === 'eleven_multilingual_v2' ? 'eleven_multilingual_v2' : 'eleven_flash_v2_5';
+  const lang = ['es', 'en', 'pt', 'fr'].includes(url.searchParams.get('l')) ? url.searchParams.get('l') : 'es';
   const voiceId = String(process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM').replace(/[^A-Za-z0-9]/g, '');
   const payload = { text, model_id: model, voice_settings: { stability: 0.5, similarity_boost: 0.75 } };
-  if (model === 'eleven_flash_v2_5') payload.language_code = 'es';
+  if (model === 'eleven_flash_v2_5') payload.language_code = lang;
   const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
     method: 'POST',
     headers: { 'xi-api-key': key, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
