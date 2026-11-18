@@ -727,7 +727,7 @@ async function iaAudioUrl(text){
    let body={text,model_id:model,voice_settings:{stability:.5,similarity_boost:.75}};if(model==='eleven_flash_v2_5')body.language_code=lg;
    res=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+encodeURIComponent(vid)+'?output_format=mp3_44100_128',{method:'POST',headers:{'xi-api-key':voz.key.trim(),'Content-Type':'application/json','Accept':'audio/mpeg'},body:JSON.stringify(body)});
  }else{
-   res=await fetch('/.netlify/functions/voz?m='+encodeURIComponent(model)+(lg==='es'?'':'&l='+lg)+(vs?'&v='+vs+(vh?'&h='+vh:''):'')+'&t='+encodeURIComponent(text));
+   res=await fetch(fnBase()+'voz?m='+encodeURIComponent(model)+(lg==='es'?'':'&l='+lg)+(vs?'&v='+vs+(vh?'&h='+vh:''):'')+'&t='+encodeURIComponent(text));
    if(res.status===404||res.status===503){vozServerDown=true;throw vozErr('Falta pegar la clave de ElevenLabs (o publicar la función de servidor). Por ahora uso la voz del dispositivo.')}
  }
  if(!res.ok){let d='';try{d=await res.text()}catch(e){}throw vozErr(vozErrorText(res.status,d))}
@@ -1307,7 +1307,7 @@ async function sfxUrl(id){
  try{if('caches'in window){cache=await caches.open(VOZ_CACHE);let hit=await cache.match(req);if(hit){let u=URL.createObjectURL(await hit.blob());sfxMem.set(id,u);return u}}}catch(e){cache=null}
  let ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),8000),res;
  try{if(voz.key)res=await fetch('https://api.elevenlabs.io/v1/sound-generation?output_format=mp3_44100_128',{method:'POST',signal:ctl.signal,headers:{'xi-api-key':voz.key.trim(),'Content-Type':'application/json',Accept:'audio/mpeg'},body:JSON.stringify({text:a[2],duration_seconds:a[3],prompt_influence:.6})});
- else res=await fetch('/.netlify/functions/sonido?a='+id,{signal:ctl.signal})}finally{clearTimeout(tm)}
+ else res=await fetch(fnBase()+'sonido?a='+id,{signal:ctl.signal})}finally{clearTimeout(tm)}
  if(!res.ok){if(res.status===404||res.status===503)sfxDown=true;throw new Error('sfx '+res.status)}
  let blob=await res.blob();if(blob.size<300)throw new Error('vacío');try{if(cache)await cache.put(req,new Response(blob,{headers:{'Content-Type':'audio/mpeg'}}))}catch(e){}
  let u=URL.createObjectURL(blob);sfxMem.set(id,u);return u
@@ -1516,6 +1516,8 @@ setTimeout(()=>{renderBlockedLog();renderTodayWords()},0);
 })();
 
 </script><script>
+/* Dónde viven las funciones de voz: Netlify o Cloudflare Pages */
+function fnBase(){return /(^|\.)netlify\.app$/i.test(location.hostname)?'/.netlify/functions/':'/api/'}
 /* ===== Idiomas: español · English · Português · Français ===== */
 const LANGS={
  es:{name:'Español',flag:'🇪🇸',v:'es-CL',re:/^es([-_]|$)/i},
@@ -1761,7 +1763,7 @@ function renderStoryVoice(){
  let lc=document.getElementById('langCard');
  if(lc&&!document.getElementById('storyVoiceCard')){let c=document.createElement('div');c.className='card langcard';c.id='storyVoiceCard';c.innerHTML='<h2>📚 Voz de los cuentos</h2><p class="note">Elige quién lee los cuentos para dormir. Chimpi sigue hablando en el resto de la app.</p><div class="langrow" id="storyVoiceRow"></div>';lc.after(c)}
  renderStoryVoice();
- fetch('/.netlify/functions/voz?info=1').then(r=>r.ok?r.json():null).then(j=>{if(j&&typeof j==='object'){window.VOZ_INFO=j;renderStoryVoice()}}).catch(()=>{});
+ fetch(fnBase()+'voz?info=1').then(r=>r.ok?r.json():null).then(j=>{if(j&&typeof j==='object'){window.VOZ_INFO=j;renderStoryVoice()}}).catch(()=>{});
 })();
 
 </script></body></html>
